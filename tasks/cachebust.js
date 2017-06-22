@@ -80,6 +80,8 @@ module.exports = function(grunt) {
         var map = opts.queryString ? {} : assetMap;
         getFilesToBeRenamed(this.files, map, opts.baseDir).forEach(replaceInFile);
 
+        function escapeStr(s) { return String(s).replace(/[\\^$*+?.()|[\]{}]/g, '\\$&'); }
+
         function replaceInFile(filepath) {
             var markup = grunt.file.read(filepath);
             var baseDir = discoveryOpts.cwd + '/';
@@ -118,8 +120,12 @@ module.exports = function(grunt) {
                 _.each(replace, function(r) {
                     var original = r[0];
                     var hashed = r[1];
+                    var extOriginal = original.split('.').slice(-1),
+                        trunkOriginal = original.split('.').slice(0, -1).join('.');
+
                     _.each(replaceEnclosedBy, function(reb) {
-                        markup = markup.split(reb[0] + original + reb[1]).join(reb[0] + hashed + reb[1]);
+                        var pattOrigFile = new RegExp(escapeStr(reb[0])+escapeStr(original) +"(\\?[a-fA-F0-9]{"+ opts.length +"})?"+escapeStr(reb[1])+"|(" + escapeStr(reb[0]) + escapeStr(trunkOriginal+opts.separator) +"[a-fA-F0-9]{"+ opts.length +"}\\."+ extOriginal + escapeStr(reb[1]) + ")", "gm");
+                        markup = markup.replace(pattOrigFile, reb[0] + hashed + reb[1]);
                     });
                 });
             });
